@@ -1,15 +1,19 @@
-# water and t effect
+# paper
+# https://www.nature.com/articles/s41561-022-01114-x
+# utilities#####
+# water and t effect; eqn13
 trap1 <- function( x,  a,  b) {
   ret = max(min((x-a)/(b-a),1),0)
   return(ret) 
 }
-# water and t effect
+# water and t effect;eqn 14
 trap2<- function(x, a, b,c,d){
 
   ret = max( min( c((x-a)/(b-a), 1, (d-x)/(d-c))) , 0 )
   return (ret)
 }
-# 
+# control the c to biomass ratio which is used to calculate mass dependent transport, tau, eqn 7
+# not really used as parameter are assumed to be 1
 F_RsC <- function(RHOc, Ms, q){
   ret = RHOc / (Ms^q)
   return(ret)
@@ -19,34 +23,34 @@ F_P <- function(A0, Ms, KA, Cs, Jc){
   ret = ( A0*Ms ) / ( (1.0 + Ms / KA) * (1.0 + Cs / (Jc*Ms))  )
   return(ret)
 }
-
+# growth
 F_Gs <- function(gs, Ms, Cs, Ns){
-
   ret = gs * (Cs * Ns) / Ms
   return (ret)
 }
-# mass affected rasisten between root and shoot for n and C
+# mass affected resistance between root and shoot for n and C
 F_TAUc <- function(Cs, Cr, Ms, Mr, RsC, RrC){
   ret = ( Cs/Ms - Cr/Mr ) / ( RsC + RrC)
   return (ret)
 }
-
+# biomass dynamics
 F_dMs_dt<- function(Gs, Kl, KM, Ms){
   ret = Gs - ( Kl*Ms ) / ( 1.0 + KM / Ms )
   return (ret)
 }
-
+# shoot c pool dynamics
 F_dCs_dt<- function(P, Fc, Gs, TAUc){
 
   ret  = P - Fc * Gs - TAUc
   return (ret)
 }
+# root c pool dynamics
 F_dCr_dt<- function(Fc, Gr, TAUc)
 {
   ret  = TAUc - Fc * Gr
   return (ret)
 }
-
+# acutal function#####
 ThornTimeARU <- function( steps, 
                           initials, 
                           TAIR, 
@@ -157,5 +161,5 @@ ThornTimeARU <- function( steps,
                     ABUTIME = ABUTIME))
 }
 
-plot(sim~c(ABUTIME*parset[21]*1000))
-abline(a=0,b=1)
+# plot(sim~c(ABUTIME*parset[21]*1000))
+# abline(a=0,b=1)
