@@ -8,7 +8,7 @@ trap1 <- function( x,  a,  b) {
 }
 # water and t effect;eqn 14
 trap2<- function(x, a, b,c,d){
-
+  
   ret = max( min( c((x-a)/(b-a), 1, (d-x)/(d-c))) , 0 )
   return (ret)
 }
@@ -40,7 +40,7 @@ F_dMs_dt<- function(Gs, Kl, KM, Ms){
 }
 # shoot c pool dynamics
 F_dCs_dt<- function(P, Fc, Gs, TAUc){
-
+  
   ret  = P - Fc * Gs - TAUc
   return (ret)
 }
@@ -50,8 +50,11 @@ F_dCr_dt<- function(Fc, Gr, TAUc)
   ret  = TAUc - Fc * Gr
   return (ret)
 }
+# plant n uptake changes n scources
+f.func <- function(x,k=1) 1 / (1 + k*x )
+
 # acutal function#####
-ThornTimeARU <- function( steps, 
+ttr_d15n <- function( steps, 
                           initials, 
                           TAIR, 
                           TSOIL, 
@@ -92,16 +95,25 @@ ThornTimeARU <- function( steps,
                           tr2,
                           f1, 
                           f2,
+                          # Jinyan adding d15N params
+                          n15.rich=6.93,
+                          ndepleted = -5.96,
+                          k.slope,
+                          ud15N,
+                          # 
                           # // uncertainty parameters
                           uMs, uMr, uCs, uCr,
                           uNs, uNr)
 {
-
+  
   sumb=0
   # collect output
   cs.vec <- c()
   ns.vec <- c()
+  nr.vec <- c()
   ABUTIME <- c()
+  n.up.vec <- c()
+  plant.d15n.vec <- c()
   
   # setup initial conditions
   Ms_ = initials 
@@ -147,19 +159,30 @@ ThornTimeARU <- function( steps,
     Ns_ = max(0.0, Ns_ + F_dCr_dt(Fn,Gs,TAUn)     + rnorm(1,0.0, uNs) )
     Nr_ = max(0.0, Nr_ + F_dCs_dt(Un,Fn,Gr,TAUn)  + rnorm(1,0.0, uNr) )
     
+    # 
     Ms_ = ( 1.0 - trap1(FIRE[index],f1,f2) ) * Ms_ 
     
     cs.vec[index] <- Cs_
     ns.vec[index] <- Ns_
+    nr.vec[index] <- Nr_
+    n.up.vec[index] <- F_dCs_dt(Un,Fn,Gr,TAUn)
     
     sumb = max(0.0, Ms_ + Mr_)
     ABUTIME[index]=sumb
-   
-    # d15nplant = 
+    
+    f <- f.func(Un,k=k.slope)
+    n15.rich <- 6.93
+    ndepleted <- -5.96
+    plant.d15n <- n15.rich * f + ndepleted *(1-f)
+    
+    plant.d15n.vec[index]  <- plant.d15n  + rnorm(1,0.0, ud15N) 
   }
-  return(data.frame(cs = cs.vec,
-                    ns = ns.vec,
-                    ABUTIME = ABUTIME))
+  return(data.frame(c.s = cs.vec,
+                    n.s = ns.vec,
+                    n.r = nr.vec,
+                    n.up = n.up.vec,
+                    plant.biomass = ABUTIME,
+                    d15n = plant.d15n.vec))
 }
 
 # plot(sim~c(ABUTIME*parset[21]*1000))
