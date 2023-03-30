@@ -1,5 +1,5 @@
 MyData<-readRDS(file="MyData_SA-BFA-BNP.rds")
-
+x <- MyData$X
 parm = MyData$pars
 Data = MyData
 Data$pos.parset
@@ -13,13 +13,13 @@ x0 <- parm[Data$pos.x0]
 
 
 ttr_d15n(steps = Data$steps,
-             initials = x0,
+             initials = data.frame(ms = 10,mr = 10,d15n = -2),
              TAIR = Data$X[,"TAIR"],
              TSOIL = Data$X[,"TSOIL"],
              M = Data$X[,"M"],
-             N=Data$X[,"N"],
-             FIRE = Data$X[,"FIRE"],
-             A = Data$X[,"PHOTO"],
+             # N=Data$X[,"N"],
+             # FIRE = Data$X[,"FIRE"],
+             A = Data$X[,"PHOTO"]+350,
              Kl = Data$Kl,
              gs = Data$gs,
              gr=Data$gr, 
@@ -33,23 +33,23 @@ ttr_d15n(steps = Data$steps,
              Fc=Data$Fc,
              Fn=Data$Fn,
              ma1=parset[1],    
-             ma2=ma1+parset[2],  
+             ma2=parset[1]+parset[2],  
              tn1=parset[3],     
-             tn2=tn1+parset[4],    
+             tn2=parset[3]+parset[4],    
              mn1=parset[5],   
-             mn2=mn1+parset[6],     
-             mn3=mn2+parset[7],     
-             mn4=mn3+parset[8],     
+             mn2=parset[5]+parset[6],     
+             mn3=parset[5]+parset[6]+parset[7],     
+             mn4=parset[5]+parset[6]+parset[7]+parset[8],     
              tg1=parset[9],     
-             tg2=tg1+parset[10],    
-             tg3=tg2+parset[11],    
-             tg4=tg3+parset[12],    
+             tg2=parset[9]+parset[10],    
+             tg3=parset[9]+parset[10]+parset[11],    
+             tg4=parset[9]+parset[10]+parset[11]+parset[12],    
              mg1=parset[13],    
-             mg2=mg1+parset[14],     
+             mg2=parset[13]+parset[14],     
              tr1= parset[15],     
-             tr2= tr1 + parset[16],     
+             tr2= parset[15] + parset[16],     
              f1= parset[17],     
-             f2= f1 + parset[18], 
+             f2= parset[17] + parset[18], 
              A0= parset[19],
              N0= parset[20],
              uMs= sigma[1]/1e3,
@@ -61,8 +61,9 @@ ttr_d15n(steps = Data$steps,
              # new param for d15N
              n15.rich = 6.93,
              ndepleted = -5.96,
-             k.slope = 5e4,
-             ud15N = sigma[6]/1e3
+             k.slope = 100,
+             ud15N = sigma[6]/1e3,
+             fc.700 = 1.4
              )
 
 
