@@ -71,7 +71,58 @@ ttr_d15n <- function( steps,
     ret = max( min( c((x-a)/(b-a), 1, (d-x)/(d-c))) , 0 )
     return (ret)
   }
-  
+  # control the c to biomass ratio which is used to calculate mass dependent transport, tau, eqn 7
+  # not really used as parameter are assumed to be 1
+  F_RsC <- function(RHOc, Ms, q){
+    ret = RHOc / (Ms^q)
+    return(ret)
+  }
+  # uptake of c and N
+  F_P <- function(A0, Ms, KA, Cs, Jc){
+    ret = ( A0*Ms ) / ( (1.0 + Ms / KA) * (1.0 + Cs / (Jc*Ms))  )
+    return(ret)
+  }
+  # growth
+  F_Gs <- function(gs, Ms, Cs, Ns){
+    ret = gs * (Cs * Ns) / Ms
+    return (ret)
+  }
+  # mass affected resistance between root and shoot for n and C
+  F_TAUc <- function(Cs, Cr, Ms, Mr, RsC, RrC){
+    ret = ( Cs/Ms - Cr/Mr ) / ( RsC + RrC)
+    return (ret)
+  }
+  # biomass dynamics
+  F_dMs_dt<- function(Gs, Kl, KM, Ms){
+    ret = Gs - ( Kl*Ms ) / ( 1.0 + KM / Ms )
+    return (ret)
+  }
+  # shoot c pool dynamics
+  F_dCs_dt<- function(P, Fc, Gs, TAUc){
+    
+    ret  = P - Fc * Gs - TAUc
+    return (ret)
+  }
+  # root c pool dynamics
+  F_dCr_dt<- function(Fc, Gr, TAUc)
+  {
+    ret  = TAUc - Fc * Gr
+    return (ret)
+  }
+  # plant n uptake changes n sources
+  # higher f mean plant take more from 15n rich source
+  f.func <- function(x,k=1) exp(-k*x)#1 / (1 + k*x )
+  # plant response to co2s
+  f_co2 <- function(x,fc.700=1.4){
+    #the 1.4 is taken from 
+    # 10.1111/j.1365-3040.2007.01641.x
+    # fig 3
+    # also the same in 3pg
+    # https://www.sciencedirect.com/science/article/pii/S0378112797000261
+    fC = fc.700 / (2 - fc.700)
+    falpha = fC * x / (350* (fC - 1) + x)
+    return(falpha)
+  }
   # control the c to biomass ratio which is used to calculate mass dependent transport, tau, eqn 7
   # not really used as parameter are assumed to be 1
   F_RsC <- function(RHOc, Ms, q){
@@ -176,7 +227,9 @@ ttr_d15n <- function( steps,
     TAUn = max(F_TAUc(Nr_,Ns_,Mr_,Ms_,RsN,RrN),0)
     # senecience
     # Kl = A0 *0.1
+
     LOSS = (Kl*0.5 + Kl*0.5*trap1(TAIR[index],tr1,tr2))*nDay
+
     # change in pools
     Ms_ = max(0.01, 
               Ms_ + F_dMs_dt(Gs = Gs,Kl = LOSS,KM = KM,Ms = Ms_) + rnorm(1,0.0, (1e-10)*uMs) )

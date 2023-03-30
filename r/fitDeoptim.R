@@ -9,7 +9,10 @@ library(raster)
 library(parallel)
 
 source('r/readERA5.r')
+<<<<<<< HEAD
 source('r/TTR_d15N.R')
+=======
+>>>>>>> 80122947bbdcdf143bafadac8ed5f890d3c5b13b
 # read rf model fit fr dn15
 rf.fit <- readRDS('\\\\fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/delta_n_15/cache/rf.kFold.n15.rds')
 # read landsat
@@ -219,12 +222,20 @@ model.de.func <- function(parset,
   df.tmp <- dat$obs[!is.na(dat$obs$ndvi),]
   
   resid.cover <- ((df.tmp$cover.pred - df.tmp$ndvi)/sd.cover)^2
+<<<<<<< HEAD
   resid.cover[is.na(resid.cover)] <- 1e3
+=======
+  # resid.cover[is.na(resid.cover)] <- 1e3
+>>>>>>> 80122947bbdcdf143bafadac8ed5f890d3c5b13b
   # 
   sd.d15n <- sd(df.tmp$dn15.pred,na.rm = T)
   
   resid.swc <- ((df.tmp$dn15.pred - df.tmp$d15n)/sd.d15n)^2
+<<<<<<< HEAD
   resid.swc[is.na(resid.swc)] <- 1e3
+=======
+  # resid.swc[is.na(resid.swc)] <- 1e3
+>>>>>>> 80122947bbdcdf143bafadac8ed5f890d3c5b13b
   # 
   if(is.evalue){
     return(sum(resid.cover) + sum(resid.swc))
@@ -253,7 +264,11 @@ get.ini.func <- function(par.df,...){
   lower <- unlist(par.df['min',])
   upper <- unlist(par.df['max',]) 
   NPmax <- 500
+<<<<<<< HEAD
   maxiter <- 250
+=======
+  maxiter <- 1000
+>>>>>>> 80122947bbdcdf143bafadac8ed5f890d3c5b13b
   # 
   set.seed(1935)
   OptBB.de.fit <- DEoptim(fn= model.de.func,
