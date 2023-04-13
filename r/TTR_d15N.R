@@ -84,7 +84,7 @@ ttr_d15n <- function( steps,
   }
   # growth
   F_Gs <- function(gs, Ms, Cs, Ns){
-    ret = gs * (Cs * Ns) / Ms
+    ret = gs * Ms * Cs/ Ms * Ns/ Ms 
     return (ret)
   }
   # mass affected resistance between root and shoot for n and C
@@ -175,7 +175,7 @@ ttr_d15n <- function( steps,
     falpha = fC * x / (350* (fC - 1) + x)
     return(falpha)
   }
-  
+  persision.val <- 1e-6
   #start of model####
   sumb = 0
   # collect output
@@ -187,22 +187,25 @@ ttr_d15n <- function( steps,
   plant.d15n.vec <- c()
   f.value <- c()
   n.mass.inhib <- c()
-  
+  shoot.biomass <- c()
+  photo <- c()
   # setup initial conditions
   Ms_ = initials$ms 
   Mr_ = initials$mr
   d15n <- initials$d15n
   
-  Cs_ = Ms_ * 0.05
-  Cr_ = Mr_ * 0.05
-  Ns_ = Ms_ * 0.01
-  Nr_ = Ms_ * 0.01
+  Cs_ = Ms_ * Fc
+  Cr_ = Mr_ * Fc
+  Ns_ = Ms_ * Fn
+  Nr_ = Ms_ * Fn
   
   # loop over the time steps
   for(index in 1:steps) { 
     # c uptake photosynthesis
     # A0_E = A0* A[index]* trap1(M[index],ma1,ma2) 
-    A0_E = A0 * nDay * f_co2(A[index],fc.700 = fc.700)* trap1(M[index],ma1,ma2)
+    A0_E = A0 * nDay * 
+      f_co2(A[index],fc.700 = fc.700) * 
+      trap1(M[index],ma1,ma2) 
     # N uptake
     N0_E = N0 * nDay * trap1(TSOIL[index],tn1,tn2) *
       trap2(M[index],mn1,mn2,mn3,mn4)  
@@ -218,30 +221,30 @@ ttr_d15n <- function( steps,
     RsN = F_RsC(RHOn,Ms_,q)
     RrN = F_RsC(RHOn,Mr_,q)
     # actual uptake rates
-    P  = F_P(A0_E,Ms_,KA,Cs_,Jc)
-    Un = F_P(N0_E,Mr_,KA,Nr_,Jn)
-    Gs = F_Gs(gs_E,Ms_,Cs_,Ns_)
-    Gr = F_Gs(gr_E,Mr_,Cr_,Nr_)
+    P  = F_P(A0_E,Ms_,KA,Cs_,Jc) * (Ms_ - persision.val) / Ms_
+    Un = F_P(N0_E,Mr_,KA,Nr_,Jn) * (Mr_ - persision.val) / Mr_
+    Gs = F_Gs(gs = gs_E,Ms = Ms_,Cs = Cs_,Ns = Ns_) * (Ns_ - persision.val) / Ns_
+    Gr = F_Gs(gr_E,Mr_,Cr_,Nr_) * (Nr_ - persision.val) / Nr_
     # size dependent resistance
-    TAUc = max(F_TAUc(Cs_,Cr_,Ms_,Mr_,RsC,RrC),0)
-    TAUn = max(F_TAUc(Nr_,Ns_,Mr_,Ms_,RsN,RrN),0)
+    TAUc = max(F_TAUc(Cs_,Cr_,Ms_,Mr_,RsC,RrC),0) * (Ms_ - persision.val) / Ms_
+    TAUn = max(F_TAUc(Nr_,Ns_,Mr_,Ms_,RsN,RrN),0) * (Nr_ - persision.val) / Nr_
     # senecience
     # Kl = A0 *0.1
 
     LOSS = (Kl*0.5 + Kl*0.5*trap1(TAIR[index],tr1,tr2))*nDay
 
     # change in pools
-    Ms_ = max(0.01, 
+    Ms_ = max(persision.val, 
               Ms_ + F_dMs_dt(Gs = Gs,Kl = LOSS,KM = KM,Ms = Ms_) + rnorm(1,0.0, (1e-10)*uMs) )
-    Mr_ = max(0.01, 
+    Mr_ = max(persision.val, 
               Mr_ + F_dMs_dt(Gr,LOSS,KM,Mr_) + rnorm(1,0.0, (1e-10)*uMr) )
-    Cs_ = max(0.001, 
+    Cs_ = max(persision.val, 
               Cs_ + F_dCs_dt(P = P,Fc = Fc,Gs = Gs,TAUc = TAUc)   + rnorm(1,0.0, (1e-10)*uCs) )
-    Cr_ = max(0.001, 
+    Cr_ = max(persision.val, 
               Cr_ + F_dCr_dt(Fc,Gr,TAUc)     + rnorm(1,0.0, (1e-10)*uCr) )
-    Ns_ = max(0.0001, 
+    Ns_ = max(persision.val, 
               Ns_ + F_dCr_dt(Fn,Gs,TAUn)     + rnorm(1,0.0, (1e-10)*uNs) )
-    Nr_ = max(0.0001, 
+    Nr_ = max(persision.val, 
               Nr_ + F_dCs_dt(Un,Fn,Gr,TAUn)  + rnorm(1,0.0, (1e-10)*uNr) )
     
     # 
@@ -250,10 +253,11 @@ ttr_d15n <- function( steps,
     cs.vec[index] <- Cs_
     ns.vec[index] <- Ns_
     nr.vec[index] <- Nr_
-    n.up.vec[index] <- max(0,F_dCr_dt(Fn,Gs,TAUn))
-    
-    sumb = max(0.0, Ms_ + Mr_)
-    ABUTIME[index]=sumb
+    n.up.vec[index] <- max(0,Un)
+    photo[index] <- P
+    # sumb = max(0.0, Ms_ + Mr_)
+    ABUTIME[index]=Ms_ + Mr_
+    shoot.biomass[index]=Ms_
     #use the mass reduction on uptake here eqn 6 
     if(N0_E>0){
       n.mass.inhib[index] <- Un / N0_E
@@ -261,14 +265,20 @@ ttr_d15n <- function( steps,
       n.mass.inhib[index] <- 0
     }
     
-    f <- max(f.func(n.mass.inhib[index],k=k.slope),0.0001)
+    # if(N0_E>0){
+      f <- max(f.func(n.mass.inhib[index],k=k.slope),0.0001)
+    # }else{
+    #   f <- NA
+    # }
+    
     #caclualte d15n based on masss wieghting
     f.value[index] <- f
-    n15.rich <- 15
-    ndepleted <- -10
+    # n15.rich <- 15
+    # ndepleted <- -10
     plant.d15n.new.f <- n15.rich * f + ndepleted *(1-f)
     
-    d15n <- (d15n * (Ns_ - n.up.vec[index]) + plant.d15n.new.f * n.up.vec[index]) / Ns_
+    d15n <- (d15n * (Nr_ - n.up.vec[index]) + 
+               plant.d15n.new.f * n.up.vec[index]) / Nr_
     
     plant.d15n.vec[index]  <- d15n  + rnorm(1,0.0, (1e-10)*ud15N) 
   }
@@ -277,6 +287,8 @@ ttr_d15n <- function( steps,
                     n.r = nr.vec,
                     n.up = n.up.vec,
                     plant.biomass = ABUTIME,
+                    plant.s.biomass = shoot.biomass,
+                    photo = photo,
                     f.value = f.value,
                     n.mass.inhib = n.mass.inhib,
                     d15n = plant.d15n.vec))
