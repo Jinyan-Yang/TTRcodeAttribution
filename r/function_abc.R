@@ -195,7 +195,9 @@ ABC_acceptance <- function(parset,dat,threshold){
     out.ls$trueFalse <- F
     return(out.ls) 
   } 
-  
+  initials <- data.frame(ms = parset[23],
+                         mr = parset[24],
+                         d15n = parset[25])
   # start model####
   simulated_data <- ttr_d15n(steps = dat$steps,
                              initials = initials,

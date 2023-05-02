@@ -189,7 +189,7 @@ get.ini.func <- function(par.df,inputs.ls,iter.max=50,n.core = 20){
   # setting control parameters and limits to values
   lower <- unlist(par.df['min',])
   upper <- unlist(par.df['max',]) 
-  NPmax <- 300
+  NPmax <- 300#$population in each iteration
   # maxiter <- 50
   # 
   set.seed(1935)
@@ -198,9 +198,10 @@ get.ini.func <- function(par.df,inputs.ls,iter.max=50,n.core = 20){
                           upper = upper,
                           dat = inputs.ls,
                           DEoptim.control(VTR = 1,
+                                          reltol = 0.1,
                                           NP = NPmax,
                                           itermax = iter.max,
-                                          trace = 10,
+                                          trace = 50,
                                           parallelType = 'foreach',
                                           parVar = list('ttr_d15n'),
                                           cluster = makeCluster(n.core)))

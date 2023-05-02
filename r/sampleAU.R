@@ -1,12 +1,20 @@
 library(raster)
-df.biome <- readRDS('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/delta_n_15/cache/ls.d15n.slope.global.rds')
-df.biome.au <- df.biome[df.biome$lon > 110 & 
-                          df.biome$lon <155&
-                          df.biome$lat > -45 & 
-                          df.biome$lat < -10,]
+library(sf)
+# df.biome <- readRDS('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/delta_n_15/cache/ls.d15n.slope.global.rds')
+# df.biome.au <- df.biome[df.biome$lon > 110 & 
+#                           df.biome$lon <155&
+#                           df.biome$lat > -45 & 
+#                           df.biome$lat < -10,]
+# sample havplot
+hav.df <- read.csv('//fs1-cbr.nexus.csiro.au/{lw-bio-digi}/work/nativeness/plot_data/HAVPlot_nativeness_2021-02-05.csv')
+hav.df.good <- hav.df[hav.df$proportionNativeCover > 0.8,]
+hav.df.good$lon <- hav.df.good$decimalLongitude
+hav.df.good$lat <- hav.df.good$decimalLatitude
+
 kpn.ra <- raster('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/dynamics_HC/data/kpn/kpnall.txt')
 
-df.biome.au$kpn <- extract(kpn.ra,cbind(df.biome.au$lon,df.biome.au$lat))
+hav.df.good$kpn <- extract(kpn.ra,cbind(hav.df.good$lon,
+                                        hav.df.good$lat))
 
 get.sample.func <- function(dat.in,sample.size = 800){
   
@@ -56,14 +64,28 @@ sample.func <- function(hav.df.good){
   return(coord.hav.good)
 }
 #########
-sample.df <- sample.func(df.biome)
+sample.df <- sample.func(hav.df.good)
 sample.df.sub <- sample.df[,c("x",'y')]
 names(sample.df.sub) <- c('lon','lat')
-df.biome.sub <- df.biome[,c('lon','lat')]
+xxxxx <- hav.df.good[!is.na(hav.df.good$decimalLongitude),]
+xxxxx[duplicated(xxxxx),]
+xxxxx[xxxxx$decimalLongitude == 149.3349,]
+df.biome.sub <- hav.df.good[!is.na(hav.df.good$kpn),]
 
-both.df <- rbind(sample.df.sub,df.biome.sub)
-sample.index <- which(duplicated(both.df))
-sample.index <- sample.index - nrow(sample.df.sub)
+# both.df <- rbind(sample.df.sub,df.biome.sub)
+both.df <- dplyr::left_join(sample.df.sub,df.biome.sub)
+both.df$yr <- lubridate::year(as.Date(both.df$obsStartDate))
+both.df <- both.df[both.df$yr > 1983,]
+both.df <- both.df[order(both.df$yr,decreasing = T),]
+both.df <- both.df[!duplicated(both.df[,c("lon",'lat')]),]
+
+# both.df <- split(both.df,both.df$plotID)
+# sample.index <- which(duplicated(both.df))
+# sample.index <- sample.index - nrow(sample.df.sub)
 # df.biome.sub[sample.index[1],]
-saveRDS(sample.index,'cache/auSites.rds')
-write.csv(df.biome.sub[sample.index,],'cache/auSitesGPS.csv',row.names=F)
+# saveRDS(sample.index,'cache/auSites.rds')
+write.csv(both.df,'cache/auSitesGPS_havPlot.csv',row.names=F)
+
+
+xxx.df <- read.csv('cache/auSitesGPS_havPlot.csv')
+xxx.df$lon

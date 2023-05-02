@@ -1,7 +1,28 @@
+library(terra)
+# sm.2000.2010 <- rast('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/sm/sm_2000_2010.nc')
+# sm.2010.2020 <- rast('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/sm/sm_2010_2020.nc')
+# sm.1984.1999 <- rast('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/sm/sm_1984_1999.nc')
+# sm.ra <- (c(sm.1984.1999,sm.2000.2010,sm.2010.2020))
+# tair.2000.2010 <- rast('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/tair/tair_2000_2010.nc')
+# tair.2010.2020 <- rast('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/tair/tair_2010_2020.nc')
+# tair.1984.1999 <- rast('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/tair/tair_1984-1999.nc')
+# tair.ra <- (c(tair.1984.1999,tair.2000.2010,tair.2010.2020))
+# 
 sm.2000.2010 <- raster::brick('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/sm/sm_2000_2010.nc')
 sm.2010.2020 <- raster::brick('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/sm/sm_2010_2020.nc')
+sm.1984.1999 <- raster::brick('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/sm/sm_1984_1999.nc')
+sm.ra <- stack(list(sm.1984.1999,sm.2000.2010,sm.2010.2020))
+sm.ra <- readAll(sm.ra)
 tair.2000.2010 <- raster::brick('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/tair/tair_2000_2010.nc')
 tair.2010.2020 <- raster::brick('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/tair/tair_2010_2020.nc')
+tair.1980 <- raster::brick('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/tair/tair_1980.nc',level = 2)
+# names(tair.2010.2020)
+tair.1984.1999 <- raster::brick('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/tair/tair_1984-1999.nc')
+tair.ra <- stack(list(tair.1980,tair.1984.1999,tair.2000.2010,tair.2010.2020))
+tair.ra <- readAll(tair.ra)
+# no.data <- setdiff(names(sm.ra),names(tair.ra))
+# which(names(sm.ra) %in% no.data)
+# sm.ra <- sm.ra[-1]
 
 # library(rasterVis)
 # levelplot(sm.2000.2010)
@@ -12,3 +33,8 @@ tair.2010.2020 <- raster::brick('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan1
 # plot(sm.2000.2010[[1]])
 # points(x = ls.point.df$lon,ls.point.df$lat)
 # crs(sm.2000.2010)
+# tair.test <- raster::brick('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/sm/sm_1984_1999.nc')
+# names(tair.test)
+
+# length(sm.ra)
+# sm.r
