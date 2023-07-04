@@ -15,9 +15,9 @@ source('r/fitDeoptim.R')
 source('r/readERA5.R')
 # 
 
-landsat.ts.ls.sample <- readRDS('cache/sampleAU.ls.rds')
+# landsat.ts.ls.sample <- readRDS('cache/sampleAU.ls.rds')
+landsat.ts.ls.sample <- readRDS('sampleAU_havPlot.ls.rds')
 
-length(landsat.ts.ls.sample)
 # func#####
 get.input.func <- function(ls.point.df){#,
                            # rf.fit = readRDS('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/delta_n_15/cache/rf.kFold.n15.rds')){
@@ -108,21 +108,30 @@ get.input.func <- function(ls.point.df){#,
 }
 
 fit.func <- function(ls.point.df){
-  input.val.ls <- get.input.func(ls.point.df)
-  
+  # read climate
+  input.val.ls <- try(get.input.func(ls.point.df))
+  # use deopt to fit
   fit.value <- try(get.ini.func(par.df = input.val.ls$par.df,
                                 inputs.ls = input.val.ls$inputs.ls,
                                 iter.max = 500,
-                                n.core = 30))
-  if(class(fit.value) != 'try-error'){
-    par.fit.best <- unname(fit.value$optim$bestmem)
-    mcmc.out <- run_MCMC_ABC(startvalue = par.fit.best,
-                             inputDF = input.val.ls$inputs.ls,
-                             iterations = 100,
-                             thinning_interval = 1,
-                             thresh.in = 0.4,
-                             size_of_move = 1e-2)
+                                n.core = 29))
+  # get the fit results
+  par.fit.best <- try(unname(fit.value$optim$bestmem))
+  # use abc to get uncertainty
+  mcmc.out <- try(run_MCMC_ABC(startvalue = par.fit.best,
+                               inputDF = input.val.ls$inputs.ls,
+                               iterations = 100,
+                               thinning_interval = 1,
+                               thresh.in = 0.5,
+                               size_of_move = 1e-2))
+  
+  if(class(fit.value) == 'try-error' |
+     class(input.val.ls) == 'try-error'){
     
+    class(mcmc.out) = 'try-error'
+  }
+  # give results
+  if(class(mcmc.out)[1] != 'try-error'){
     mcmc.out <- as.data.frame(mcmc.out)
     
     names(mcmc.out) <- c(names(input.val.ls$par.df),
@@ -130,11 +139,11 @@ fit.func <- function(ls.point.df){
                          'nrmse.ndvi')
     mcmc.out$lon <- as.numeric(ls.point.df$lon[1])
     mcmc.out$lat <- as.numeric(ls.point.df$lat[1])
+    mcmc.out <- mcmc.out[!duplicated(mcmc.out),]
     return(mcmc.out)
   }else{
     return(data.frame(lon=NA))
   }
- 
 }
 
 #fitting even sample 0.1 degree####
@@ -145,24 +154,43 @@ e.time <- Sys.time() - s.time
 saveRDS(out.ls,'cache/fittedParAuSites.rds')
 
 #fitting havplot####
+# landsat.n15.ls.clean <- landsat.n15.ls[!sapply(landsat.n15.ls,function(df)nrow(df)==1)]
 s.time <- Sys.time()
-out.ls <- lapply(landsat.n15.ls[2], fit.func)
+out.ls.hav <- lapply(landsat.n15.ls, fit.func)
 e.time <- Sys.time() - s.time
-# ls.point.df <- landsat.n15.ls[[1]]
-saveRDS(out.ls,'cache/fittedParHavPlot.rds')
 
+# ls.point.df <- landsat.n15.ls[[1]]
+saveRDS(out.ls.hav,'cache/fittedParHavPlot.rds')
+out.hav.median.ls <- lapply(out.ls.hav, function(df){
+  # print(head(df))
+  if(!is.na(df$lon[1])){
+    require(doBy)
+    # print(df)
+    df.sum <- summaryBy(.~lon+lat,
+                        data = df,
+                        FUN=c(median),
+                        na.rm=T,keep.names = T)
+    
+    return(df.sum)
+  }else{
+    return(data.frame(lon = NA,lat = NA))
+  }
+  
+})
+
+out.hav.median.df <- dplyr::bind_rows(out.hav.median.ls)
 # length(landsat.n15.ls)
 # length(out.ls)
 # nrow(out.median.df)
-# get the poorly fitted sites
-vec.1 <- which(out.median.df$nrmse.ndvi>0.6)
-vec.2 <- which(out.median.df$nrmse.d15n>0.6)
-test <- intersect(vec.1,vec.2)
+# # get the poorly fitted sites
+# vec.1 <- which(out.hav.median.df$nrmse.ndvi>0.6)
+# vec.2 <- which(out.hav.median.df$nrmse.d15n>0.6)
+# test <- intersect(vec.1,vec.2)
 
-# redo fitting with more data
-s.time <- Sys.time()
-out.ls.bad <- lapply(landsat.ts.ls.sample[test], fit.func)
-e.time <- Sys.time() - s.time
+# # redo fitting with more data
+# s.time <- Sys.time()
+# out.ls.bad <- lapply(landsat.ts.ls.sample[test], fit.func)
+# e.time <- Sys.time() - s.time
 # analysis#####
 out.ls <- readRDS('cache/fittedParAuSites.rds')
 # out.ls <- lapply(out.ls, function(x) if(is.null(x)) data.frame(lon = NA) else x)
@@ -182,7 +210,7 @@ out.median.ls <- lapply(out.ls, function(df){
   }
  
 })
-out.median.df <- dplyr::bind_rows(out.median.ls)
+out.median.df <- out.hav.median.df##dplyr::bind_rows(out.median.ls)
 # 
 out.bad.ls <- lapply(out.ls.bad, function(df){
   # print(head(df))
@@ -210,7 +238,7 @@ out.median.df$map <- extract(clim.ra[[12]],cbind(out.median.df$lon,
                                                  out.median.df$lat))[,1]
 out.median.df$mat <- extract(clim.ra[[1]],cbind(out.median.df$lon,
                                                 out.median.df$lat))[,1]
-out.median.df$nrmse.d15n
+
 out.median.df.narm <- out.median.df[complete.cases(out.median.df),]
 out.median.df.narm$nrmse.d15n[out.median.df.narm$nrmse.d15n>1] <- 1
 
@@ -235,6 +263,8 @@ out.median.df$col.dn15 <- cut(out.median.df$nrmse.d15n,
 
 out.median.df$col.k <- cut(out.median.df$k.slope,
                            breaks = c(seq(0,100,by=20),500))
+
+
 hist(out.median.df$k.slope)
 # range(out.median.df$k.slope)
 palette(c(hcl.colors(5)[1:4],'coral','red'))
@@ -267,7 +297,23 @@ plot(mat~map,
 legend('bottomleft',legend = levels(out.median.df$col.k),
        col = palette(),pch=16)
 
+plot(log(k.slope)~mat,
+     data = out.median.df,
+     pch=16,cex = 1)
 
+# 
+plot(clim.ra[[1]],legend=F,xlim=c(110,155),ylim=c(-45,-10),col='grey80')
+points(x = out.median.df$lon, 
+       y = out.median.df$lat,
+       col = out.median.df$col.k,pch=15,cex=0.5)
+
+
+plot(clim.ra[[1]],legend=F,
+     xlim=c(110,155),
+     ylim=c(-45,-10),col='grey80')
+points(x = out.median.df$lon, 
+       y = out.median.df$lat,
+       col = out.median.df$col.dn15,pch=15,cex=0.5)
 # ma1.ra <- rasterFromXYZ(out.median.df[,c('lon','lat','ma1')])
 # plot(ma1.ra)
 # k.slope.ra <- rasterFromXYZ(out.median.df[,c('lon','lat','k.slope')])
@@ -282,7 +328,7 @@ legend('bottomleft',legend = levels(out.median.df$col.k),
 # tr2.ra <- rasterFromXYZ(out.median.df[,c('lon','lat','tr2')])
 # plot(tr2.ra)
 
-col.vec <- names(out.median.df)[-c(1,2)]
+col.vec <- names(out.median.df.narm)[-c(1,2)]
 
 col.vec.t <- col.vec[grep('t',col.vec)]
 col.vec.tn <- col.vec[grep('tn',col.vec)]
@@ -295,9 +341,11 @@ col.vec.mg <- col.vec[c(grep('mg',col.vec))]
 col.vec.cn <- c('k.slope','c2c')
 
 col.vec.error <- c('nrmse.d15n','nrmse.ndvi')
+
+
 # 
 r.t = stack(lapply(col.vec.t, 
-                 function(j) rasterFromXYZ(out.median.df[,c('lon','lat',j)])))
+                 function(j) rasterFromXYZ(out.median.df.narm[,c('lon','lat',j)])))
 # 
 r.tn.all = stack(lapply(col.vec.tn, 
                    function(j) rasterFromXYZ(out.median.df[,c('lon','lat',j)])))
