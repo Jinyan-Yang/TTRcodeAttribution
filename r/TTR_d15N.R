@@ -2,58 +2,65 @@
 # https://www.nature.com/articles/s41561-022-01114-x
 
 # 
-# make sure the parameter values are in  per day so it can be converted properly
+# make sure the parameter values are in per day so it can be converted properly
 # 
 # acutal function#####
-ttr_d15n <- function( steps, 
-                      nDay=30,
-                      initials, 
-                      TAIR, 
-                      TSOIL, 
-                      M, 
+ttr_d15n <- function( steps, #number of total steps
+                      nDay=30,#number of days in each steps
+                      initials, #intial values of the pools
+                      TAIR, # air temperature
+                      TSOIL, #soil temperature
+                      M, #soil moisture
                       # N, 
                       # FIRE, 
-                      A,
-                      Kl, 
-                      gs, 
-                      gr, 
-                      KM, 
-                      A0, 
-                      N0,
-                      KA, 
-                      Jc, 
-                      Jn, 
-                      q, 
-                      RHOc, 
-                      RHOn,
-                      Fc, 
-                      Fn, 
+                      A,  #co2 concentration
+                      Kl, #carbon senescence rate
+                      gs, # shoot growth rate
+                      gr, #root growth rate
+                      KM, #mass based growth limitation factor
+                      A0, #carbon assimilation rate
+                      N0,# nitrogen uptake rate
+                      KA, #mass based yotake limitation factor
+                      Jc, #inhibition of source activity when substrate concentrations are high
+                      Jn, #inhibition of source activity when substrate concentrations are high
+                      q, #resistent power not used: q=1
+                      RHOc, # specifc transport resistances for carbon
+                      RHOn,#specifc transport resistances for nitrogen
+                      Fc, #fraction of structural C in structural dry matter
+                      Fn, #fraction of structural N in structural dry matter
                       # //  to be fitted environmental dependencies
+                      # soil moisture control on carbon assimilation
                       ma1,
                       ma2,
+                      # temperature control on nitrogen uptake
                       tn1,
                       tn2, 
+                      # soil moisture control on nitrogen uptake
                       mn1,
                       mn2, 
                       mn3, 
                       mn4,
+                      # temperature control on growth
                       tg1,
                       tg2, 
                       tg3,
                       tg4,
+                      # soil moisture control on
                       mg1,
                       mg2,
+                      # temperature control on root growth
                       tr1,
                       tr2,
+                      # fire related parameters ; not used
                       f1, 
                       f2,
                       # Jinyan adding d15N params
-                      n15.rich=6.93,
-                      ndepleted = -5.96,
-                      k.slope,
-                      ud15N,
-                      # co2 response rate
-                      fc.700,
+                      n15.rich = 6.93, #d15N of 15N rich source
+                      ndepleted = -5.96,#d15N of 15N deplete source
+                      k.slope, #mass based fraction of n from rich source
+                      ud15N, #d15n observation error
+                      
+                      fc.700,# co2 response rate
                       # 
                       # // uncertainty parameters
                       uMs, uMr, uCs, uCr,

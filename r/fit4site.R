@@ -15,13 +15,20 @@ source('r/fitDeoptim.R')
 source('r/readERA5.R')
 # 
 
-# landsat.ts.ls.sample <- readRDS('cache/sampleAU.ls.rds')
+# read data
 landsat.ts.ls.sample <- readRDS('sampleAU_havPlot.ls.rds')
 
 # func#####
-get.input.func <- function(ls.point.df){#,
-                           # rf.fit = readRDS('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/delta_n_15/cache/rf.kFold.n15.rds')){
-  # ls.point.df <- landsat.ts.ls[[42627]]#landsat.ts.ls[[4113]]
+get.input.func <- function(ls.point.df){
+  # ########
+  # This function prepares the inputs to the format and time step of the model
+  # the input is ls.point.df
+  # it need to have the following columns:
+  # Date, lon, lat
+  # dn15.pred, ndvi,blue, green ,red,nir,swir1,swir2
+  # tair.c, sm
+  
+  #########
   # 
   ls.point.df$mon <- month(ls.point.df$date)
   ls.point.df$yr <- year(ls.point.df$date)
@@ -108,6 +115,10 @@ get.input.func <- function(ls.point.df){#,
 }
 
 fit.func <- function(ls.point.df){
+  # This function performa a two-step fit:
+  # 1. it fits the TTR model to data using deoptim
+  # 2. it used the ABC method to get a CI for the fitting
+  # 
   # read climate
   input.val.ls <- try(get.input.func(ls.point.df))
   # use deopt to fit
@@ -154,13 +165,14 @@ e.time <- Sys.time() - s.time
 saveRDS(out.ls,'cache/fittedParAuSites.rds')
 
 #fitting havplot####
-# landsat.n15.ls.clean <- landsat.n15.ls[!sapply(landsat.n15.ls,function(df)nrow(df)==1)]
+
 s.time <- Sys.time()
 out.ls.hav <- lapply(landsat.n15.ls, fit.func)
 e.time <- Sys.time() - s.time
 
 # ls.point.df <- landsat.n15.ls[[1]]
 saveRDS(out.ls.hav,'cache/fittedParHavPlot.rds')
+
 out.hav.median.ls <- lapply(out.ls.hav, function(df){
   # print(head(df))
   if(!is.na(df$lon[1])){
@@ -179,18 +191,7 @@ out.hav.median.ls <- lapply(out.ls.hav, function(df){
 })
 
 out.hav.median.df <- dplyr::bind_rows(out.hav.median.ls)
-# length(landsat.n15.ls)
-# length(out.ls)
-# nrow(out.median.df)
-# # get the poorly fitted sites
-# vec.1 <- which(out.hav.median.df$nrmse.ndvi>0.6)
-# vec.2 <- which(out.hav.median.df$nrmse.d15n>0.6)
-# test <- intersect(vec.1,vec.2)
 
-# # redo fitting with more data
-# s.time <- Sys.time()
-# out.ls.bad <- lapply(landsat.ts.ls.sample[test], fit.func)
-# e.time <- Sys.time() - s.time
 # analysis#####
 out.ls <- readRDS('cache/fittedParAuSites.rds')
 # out.ls <- lapply(out.ls, function(x) if(is.null(x)) data.frame(lon = NA) else x)

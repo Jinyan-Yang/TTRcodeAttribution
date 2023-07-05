@@ -1,94 +1,15 @@
-
-
-
-
-# inputs.ls$initial <- data.frame(ms = 1,
-#                                 mr = 1,
-#                                 d15n = 0)
-# # dat = inputs.ls
-# parm.df <- data.frame(nm = inputs.ls$parm.names,
-#                       value = inputs.ls$pars[c(inputs.ls$pos.parset,
-#                                                inputs.ls$pos.sigma,
-#                                                inputs.ls$pos.ou,
-#                                                inputs.ls$pos.x0)])
+# functions to fit deoptim #####
 #opt model######
 model.de.func <- function(parset,
                           dat,is.evalue=TRUE){
+  # anything in the parset is to be fitted
+  # the order in parset is obviously critical
   
-  # parm = dat$pars
-  # parset <- pars#parm[dat$pos.parset]
-  # sigma <- parm[dat$pos.sigma]
-  # ou <- parm[dat$pos.ou] # not used in this function
-  # x0 <- parm[dat$pos.x0]
-  
-  # initial <- data.frame(ms = parset[23],
-  #                       mr = parset[24],
-  #                       d15n = parset[25])
-  
+  # initial values
   initials <- data.frame(ms = parset[23],
                          mr = parset[24],
                          d15n = parset[25])
-  #old model####
-  # d15n.pred.df <- ttr_d15n(steps = dat$steps,
-  #                          initials = initial,
-  #                          TAIR = dat$X[,"TAIR"],
-  #                          TSOIL = dat$X[,"TSOIL"],
-  #                          M = dat$X[,"M"],
-  #                          # N = dat$X[,"N"],
-  #                          # FIRE = dat$X[,"FIRE"],
-  #                          A = dat$X[,"PHOTO"],
-  #                          Kl = dat$Kl,
-  #                          gs = dat$gs,
-  #                          gr= dat$gr, 
-  #                          KM= dat$KM,
-  #                          KA= dat$KA,
-  #                          Jc= dat$Jc,
-  #                          Jn = dat$Jn,
-  #                          q = dat$q,
-  #                          RHOc= dat$RHOc,
-  #                          RHOn=dat$RHOn,
-  #                          Fc= dat$Fc,
-  #                          Fn= dat$Fn,
-  #                          ma1= parset[1],    
-  #                          ma2= parset[1]+parset[2],  
-  #                          
-  #                          tn1= parset[3],     
-  #                          tn2= parset[3]+parset[4],    
-  #                          
-  #                          mn1= parset[5],   
-  #                          mn2= parset[5]+parset[6],     
-  #                          mn3= parset[5]+parset[6]+parset[7],     
-  #                          mn4= parset[5]+parset[6]+parset[7]+parset[8], 
-  #                          
-  #                          tg1= parset[9],     
-  #                          tg2= parset[9]+parset[10],    
-  #                          tg3= parset[9]+parset[10]+parset[11],    
-  #                          tg4= parset[9]+parset[10]+parset[11]+parset[12],    
-  #                          
-  #                          mg1= parset[1],    
-  #                          mg2= parset[1]+parset[2],     
-  #                          
-  #                          tr1= parset[3],     
-  #                          tr2= parset[3] + parset[4],    
-  #                          
-  #                          f1= parset[1],     
-  #                          f2= parset[1] + parset[2], 
-  #                          
-  #                          A0= parset[13],
-  #                          N0= parset[14],
-  #                          uMs= parset[15],#sigma[1]/1e3,
-  #                          uMr= parset[16],#sigma[2]/1e3,
-  #                          uCs= parset[17],#sigma[3]/1e3,
-  #                          uCr= parset[18],#sigma[4]/1e3,
-  #                          uNs= parset[19],#sigma[5]/1e3,
-  #                          uNr= parset[20],#sigma[6]/1e3,
-  #                          # new param for d15N
-  #                          n15.rich = 6.93,
-  #                          ndepleted = -5.96,
-  #                          k.slope = parset[21],#5e4,
-  #                          ud15N = parset[22],#sigma[6]/1e3,
-  #                          fc.700 = 1.4
-  # )
+  
   #model######
   d15n.pred.df <- ttr_d15n(steps = dat$steps,
                            initials = initials,
@@ -177,20 +98,19 @@ model.de.func <- function(parset,
   if(is.evalue){
     return(sum(resid.cover)+ sum(resid.swc))
   }else{
-    # in.out.df <- cbind(dat,d15n.pred.df)
+    
     return(d15n.pred.df)
   }
   
 }
 
-# func to use DEoptim to calaulate initial values
+# func to use DEoptim to calculate initial values
 get.ini.func <- function(par.df,inputs.ls,iter.max=50,n.core = 20){
-  # on.exit(stopCluster(cl = NULL))
+
   # setting control parameters and limits to values
   lower <- unlist(par.df['min',])
   upper <- unlist(par.df['max',]) 
   NPmax <- 300#$population in each iteration
-  # maxiter <- 50
   # 
   set.seed(1935)
   OptBB.de.fit <- DEoptim(fn= model.de.func,
@@ -206,101 +126,10 @@ get.ini.func <- function(par.df,inputs.ls,iter.max=50,n.core = 20){
                                           parVar = list('ttr_d15n'),
                                           cluster = makeCluster(n.core)))
   
-  # OptBB.de.fit <- DEoptim(fn= model.de.func,
-  #                         lower = lower,
-  #                         upper = upper,
-  #                         dat = inputs.ls,
-  #                         DEoptim.control(VTR = 1,
-  #                                         NP = NPmax,
-  #                                         itermax = maxiter,
-  #                                         parallelType ="none"
-  #                                         ))
-  # Sys.sleep(10)
-  initial.vec <- OptBB.de.fit#unname(OptBB.de.fit$optim$bestmem)
+  
+  initial.vec <- OptBB.de.fit
   return(initial.vec)
 }
 
 
 
-
-# par.df <- data.frame(ma1 = c(0.05,0.5),
-#                      ma2 = c(0.05,0.5),
-#                      
-#                      tn1 = c(0,20),
-#                      tn2 = c(1,20),
-#                      
-#                      mn1 = c(0.05,0.25),
-#                      mn2 = c(0.1,0.25),
-#                      mn3 = c(0.1,0.25),
-#                      mn4 = c(0.1,0.25),
-#                      
-#                      tg1 = c(0,20),
-#                      tg2 = c(1,10),
-#                      tg3 = c(1,10),
-#                      tg4 = c(1,10),
-#                      
-#                      A0 = c(0.01,0.4),
-#                      N0 = c(0.005,0.04),
-#                      
-#                      uMs = c(1e-6,1e-5),#sigma[1]/1e3,
-#                      uMr = c(1e-6,1e-5),#sigma[2]/1e3,
-#                      uCs = c(1e-6,1e-5),#sigma[3]/1e3,
-#                      uCr = c(1e-6,1e-5),#sigma[4]/1e3,
-#                      uNs = c(1e-6,1e-5),#sigma[5]/1e3,
-#                      uNr = c(1e-6,1e-5),#sigma[6]/1e3,
-#                      
-#                      k.slope = c(10,500),
-#                      ud15N = c(1e-6,1e-5),
-#                      c2c = c(0.1,2),
-#                      ms = c(1,500),
-#                      mr = c(1,50),
-#                      d15n = c(-10,10)
-# )
-
-# row.names(par.df) <- c('min','max')
-
-# 
-# # ######
-# fit.value <- get.ini.func(par.df = par.df)
-# par.fit.best <- unname(fit.value$optim$bestmem)
-# 
-# out.df <- model.de.func(parset = par.fit.best,
-#                         dat = inputs.ls,is.evalue = F)
-# in.out.df <- cbind(ls.met.df,out.df)
-# 
-# in.out.df$days <- 1:nrow(in.out.df)
-# 
-# # plot(c(c.s* par.fit.best[29])~ndvi,data = in.out.df)
-# # plot(in.out.df$c.s * par.fit.best[29],pch=16,col='red')
-# # points(in.out.df$ndvi,pch=16,col='grey')
-# # 
-# # plot(in.out.df$dn15.pred,pch=16,col='red')
-# # points(in.out.df$d15n,pch=16,col='grey')
-# # 
-# # plot(ls.met.df$sm)
-# 
-# in.out.df$ndvi.pred <- 1-exp(-in.out.df$plant.s.biomass * par.fit.best[22])
-# plot(ndvi.pred~ndvi,data = in.out.df)
-# abline(a=0,b=1)
-# library(ggplot2)
-# plot <- ggplot(in.out.df, aes(days,ndvi)) + 
-#   geom_point()+ ylim(0, 1)+ geom_smooth(method = 'gam',formula = y ~ s(x, k = 5))
-# 
-# 
-# plot  + 
-#   geom_line(aes(in.out.df$days,
-#                  in.out.df$ndvi.pred),
-#              colour = "red")
-# 
-# # x <- in.out.df[!is.na(in.out.df$ndvi),]
-# in.out.df.sub <- in.out.df#[in.out.df$yr >2010,]
-# plot.d15n <- ggplot(in.out.df.sub, aes(days,dn15.pred)) + geom_point()
-# 
-# 
-# plot.d15n + geom_smooth(method = 'gam',formula = y ~ s(x, k = 5)) + 
-#   geom_line(aes(in.out.df.sub$days,
-#                  in.out.df.sub$d15n),
-#              colour = "red")
-# 
-# plot(d15n~dn15.pred,data = in.out.df)
-# abline(a=0,b=1)
