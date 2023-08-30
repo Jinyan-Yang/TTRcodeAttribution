@@ -182,6 +182,7 @@ ttr_d15n <- function( steps, #number of total steps
     falpha = fC * x / (350* (fC - 1) + x)
     return(falpha)
   }
+  # controls the number of decimal place of state variables
   persision.val <- 1e-6
   #start of model####
   sumb = 0
@@ -207,7 +208,7 @@ ttr_d15n <- function( steps, #number of total steps
   Nr_ = Ms_ * Fn
   
   # loop over the time steps
-  for(index in 1:steps) { 
+  for(index in c(1:steps)) { 
     # c uptake photosynthesis
     # A0_E = A0* A[index]* trap1(M[index],ma1,ma2) 
     A0_E = A0 * nDay * 
