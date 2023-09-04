@@ -22,12 +22,12 @@ get.input.func <- function(ls.point.df){
                                 FUN = median,na.rm=T,keep.names = T)
   
   # extract met data
-  met.df <- data.frame(sm = (extract(sm.ra,
+  met.df <- data.frame(sm = extract(sm.ra,
                                      cbind(ls.point.sum.df$lon[1],
-                                           ls.point.sum.df$lat[1])))[1,],
-                       tair = (extract(tair.ra,
+                                           ls.point.sum.df$lat[1]))[1,],
+                       tair = extract(tair.ra,
                                        cbind(ls.point.sum.df$lon[1],
-                                             ls.point.sum.df$lat[1])))[1,],
+                                             ls.point.sum.df$lat[1]))[1,],
                        date = names(sm.ra))
   
   met.df$date <- as.Date(met.df$date,'X%Y.%m.%d')
@@ -91,8 +91,10 @@ get.input.func <- function(ls.point.df){
                        mr = c(0.1,15),
                        d15n = c(-10,10),#c(d15n.mean - d15n.sd,d15n.mean + d15n.sd),
                        row.names = c('min','max'))
+  if(sum(met.df$sm,na.rm=T)!=0){
+    return(list(inputs.ls = inputs.ls,par.df = par.df))
+  }
   
-  return(list(inputs.ls = inputs.ls,par.df = par.df))
 }
 
 # func#####

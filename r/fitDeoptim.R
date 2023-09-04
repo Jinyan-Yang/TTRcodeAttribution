@@ -74,29 +74,37 @@ model.de.func <- function(parset,
   )
   
   #output #####
-  #standardise with sd
-  sd.cover <- sd(dat$obs$ndvi,na.rm = T)
-  
+  # #standardise with sd
+  # sd.cover <- sd(dat$obs$ndvi,na.rm = T)
+  # 
   dat$obs$cover.pred <- 1 - exp(-parset[22] * d15n.pred.df$plant.s.biomass)
-  dat$obs$d15n <- d15n.pred.df$d15n 
-  
-  # d15n.pred.df$pred.cover <- d15n.pred.df$c.s * parset[29]  
-  
+  dat$obs$d15n <- d15n.pred.df$d15n
   df.tmp <- dat$obs[!is.na(dat$obs$ndvi),]
   
-  resid.cover <- ((df.tmp$cover.pred - df.tmp$ndvi)/sd.cover)^2
-  
-  resid.cover[is.na(resid.cover)] <- 1e3
+  # #sd based metric
+  # d15n.pred.df$pred.cover <- d15n.pred.df$c.s * parset[29]
+  # 
   
   # 
-  sd.d15n <- sd(df.tmp$dn15.pred,na.rm = T)
+  # resid.cover <- ((df.tmp$cover.pred - df.tmp$ndvi)/sd.cover)^2
+  # 
+  # resid.cover[is.na(resid.cover)] <- 1e3
+  # 
+  # # 
+  # sd.d15n <- sd(df.tmp$dn15.pred,na.rm = T)
+  # 
+  # resid.swc <- ((df.tmp$dn15.pred - df.tmp$d15n)/sd.d15n)^2
+  # resid.swc[is.na(resid.swc)] <- 1e3
   
-  resid.swc <- ((df.tmp$dn15.pred - df.tmp$d15n)/sd.d15n)^2
-  resid.swc[is.na(resid.swc)] <- 1e3
+  # nrmse based sum error
+  diff.n15 <- get.nmse.func(obs = df.tmp$dn15.pred,
+                            prd = df.tmp$d15n)
+  diff.ndvi <- get.nmse.func(obs = df.tmp$ndvi,
+                             prd = df.tmp$cover.pred)
   
   # 
   if(is.evalue){
-    return(sum(resid.cover)+ sum(resid.swc))
+    return(diff.n15 + diff.ndvi)
   }else{
     
     return(d15n.pred.df)
