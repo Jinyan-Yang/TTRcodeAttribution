@@ -275,11 +275,13 @@ ABC_acceptance <- function(parset,dat,threshold){
     out.ls$diff.n15 <- diff.n15
     out.ls$diff.ndvi <- diff.ndvi
     out.ls$trueFalse <- T
+    out.ls$outputs <- simulated_data
     return(out.ls)
   }  else{
     out.ls$diff.n15 <- diff.n15
     out.ls$diff.ndvi <- diff.ndvi
     out.ls$trueFalse <- F
+    out.ls$outputs <- simulated_data
     return(out.ls)
   } 
 }
@@ -307,7 +309,7 @@ run_MCMC_ABC <- function(startvalue,
     
     proposal = rnorm(n.par,
                      mean = chain[i,], 
-                     sd= abs(size_of_move * chain[i,]))
+                     sd = abs(size_of_move * chain[i,]))
     
     out.accpt.it <- ABC_acceptance(proposal,
                                    dat = inputDF,
@@ -325,8 +327,19 @@ run_MCMC_ABC <- function(startvalue,
     
 
   }
-  return(do.call(cbind,list(chain,
-                            as.matrix(d15n.nrmse,ncol=1),
-                            as.matrix(ndvi.nrmse,ncol=1))))
+  # return(do.call(cbind,list(chain,
+  #                           as.matrix(d15n.nrmse,ncol=1),
+  #                           as.matrix(ndvi.nrmse,ncol=1))))
+  fitted.df <- do.call(cbind,list(chain,
+                                  as.matrix(d15n.nrmse,ncol=1),
+                                  as.matrix(ndvi.nrmse,ncol=1)))
+  fitted.df <- as.data.frame(fitted.df)
+  fitted.df <- c(names(startvalue),
+                 'nrmse.d15n',
+                 'nrmse.ndvi')
+  fitted.df <- fitted.df[!duplicated(fitted.df),]
+  
+  return(list(fitting = fitted.df,
+              predictions = out.accpt$outputs))
 }
 # mcmc(chain, thin=thinning_interval)
