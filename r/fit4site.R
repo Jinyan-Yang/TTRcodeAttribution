@@ -1,7 +1,7 @@
 library(DEoptim)
 library(foreach)
 library(doParallel)
-library(plante)
+# library(plante)
 library(lubridate)
 library(doBy)
 library(randomForest)
@@ -9,10 +9,11 @@ library(raster)
 library(parallel)
 library(coda)
 # 
-source('r/readInputs.R')
+source('r/TTR_d15N.R')
+# source('r/readInputs.R')
 source('r/function_abc.R')
 source('r/fitDeoptim.R')
-source('r/readERA5.R')
+# source('r/readERA5.R')
 source('r/function_fitting.R')
 # 
 
@@ -60,7 +61,7 @@ out.hav.median.df <- dplyr::bind_rows(out.hav.median.ls)
 out.ls <- readRDS('cache/fittedParHavPlot.rds')
 # out.ls <- lapply(out.ls, function(x) if(is.null(x)) data.frame(lon = NA) else x)
 # 
-
+out.ls[[1]]
 out.median.ls <- lapply(out.ls, function(df){
   # print(head(df))
   df <- df[complete.cases(df),]
@@ -85,17 +86,17 @@ out.median.df$site.no <- row.names(out.median.df)
 
 out.median.df <- out.median.df[order(out.median.df$nrmse.ndvi),]
 
-good.df <- out.median.df[1:10,]
+good.df <- out.median.df#[1:10,]
 good.index <- as.numeric(good.df$site.no)
 
-good.input.ls <- landsat.ts.ls.sample[good.index]
+good.input.ls <- landsat.ts.ls.sample#[good.index]
 # good.input.ls[[6]]
 
 for (i in seq_along(good.input.ls)){
   print(paste0(i,': ',nrow(good.input.ls[[i]])))
 }
 
-good.input.ls <- good.input.ls[c(5,7,8,9,10)]
+# good.input.ls <- good.input.ls[c(5,7,8,9,10)]
 # get met data
 input.val.ls <- lapply(good.input.ls, function(dat){
   

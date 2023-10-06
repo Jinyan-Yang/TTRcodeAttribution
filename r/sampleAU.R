@@ -1,5 +1,6 @@
 library(raster)
 library(sf)
+
 # df.biome <- readRDS('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/delta_n_15/cache/ls.d15n.slope.global.rds')
 # df.biome.au <- df.biome[df.biome$lon > 110 & 
 #                           df.biome$lon <155&

@@ -118,7 +118,7 @@ ttr_d15n <- function( steps, #number of total steps
   }
   # plant n uptake changes n sources
   # higher f mean plant take more from 15n rich source
-  f.func <- function(x,k=1) exp(-k*x)#1 / (1 + k*x )
+  f.func <- function(x,k=5) 1-x^k #1 / (1 + exp(k*(x - 0.5)))#exp(-k*x) # 1 / (1 + k*x ) # 
   # plant response to co2s
   f_co2 <- function(x,fc.700=1.4){
     #the 1.4 is taken from 
@@ -274,7 +274,8 @@ ttr_d15n <- function( steps, #number of total steps
     }
     
     # if(N0_E>0){
-      f <- max(f.func(n.mass.inhib[index],k=k.slope),0.0001)
+    f <- max(f.func(n.mass.inhib[index],k=k.slope),0.0001)
+      
     # }else{
     #   f <- NA
     # }

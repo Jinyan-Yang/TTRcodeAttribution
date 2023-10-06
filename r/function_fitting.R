@@ -33,6 +33,26 @@ get.input.func <- function(ls.point.df){
   met.df$date <- as.Date(met.df$date,'X%Y.%m.%d')
   met.df$yr <- year(met.df$date)
   met.df$mon <- month(met.df$date)
+  # remove na in the met and select only period with longest consecutive data
+  res <- as.data.frame(lapply(lapply(met.df, is.na), function(x) {
+    r <- rle(x)
+    s <- sapply(r$lengths, seq_len)
+    s[r$values] <- lapply(s[r$values], `*`, 0)
+    unlist(s)
+  }))
+  
+  if(max(res$sm) >= max(res$tair)){
+    min.index <- max(res$tair)
+    # key.col <- 'tair'
+    row.nm <- which.max(res$tair)
+  }else{
+    min.index <- max(res$sm)
+    # key.col <- 'sm'
+    row.nm <- which.max(res$sm)
+  }
+
+  met.df <- met.df[(row.nm - min.index):row.nm, ]
+  
   # 
   ls.met.df <- merge(ls.point.sum.df,met.df,by = c('mon','yr'),all=T)
   ls.met.df <- ls.met.df[order(ls.met.df$date),]
@@ -41,8 +61,7 @@ get.input.func <- function(ls.point.df){
   # # month()
   inputs.ls <- readRDS(file="MyData_SA-BFA-BNP.rds")
   
-  inputs.ls$
-    inputs.ls$X <- data.frame(PHOTO = seq(350,400,length.out = nrow(ls.met.df)),
+  inputs.ls$X <- data.frame(PHOTO = seq(350,400,length.out = nrow(ls.met.df)),
                               TAIR = ls.met.df$tair.c,
                               TSOIL = ls.met.df$tair.c,
                               M = ls.met.df$sm)
@@ -50,7 +69,7 @@ get.input.func <- function(ls.point.df){
   inputs.ls$obs <- data.frame(ls.met.df[,c("date",'lon','lat',"dn15.pred","ndvi")])
   inputs.ls$steps <- nrow(ls.met.df)
   
-  inputs.ls <- inputs.ls 
+  # inputs.ls <- inputs.ls 
   
   ndvi.mean <- mean(inputs.ls$obs$ndvi,na.rm=T)
   ndvi.sd <- sd(inputs.ls$obs$ndvi,na.rm=T)
@@ -58,39 +77,91 @@ get.input.func <- function(ls.point.df){
   d15n.mean <- mean(inputs.ls$obs$dn15.pred,na.rm=T)
   d15n.sd <- sd(inputs.ls$obs$dn15.pred,na.rm=T)
   # make input par list####
-  par.df <- data.frame(ma1 = c(0.01,0.15),
-                       ma2 = c(0.05,0.25),
-                       tn1 = c(5,15),
-                       tn2 = c(5,20),
-                       mn1 = c(0.01,0.1),
-                       mn2 = c(0.01,0.1),
-                       mn3 = c(0.01,0.1),
-                       mn4 = c(0.01,0.1),
-                       tg1 = c(5,10),
-                       tg2 = c(1,10),
-                       tg3 = c(1,10),
-                       tg4 = c(1,10),
-                       mg1 = c(0.01,0.1),
-                       mg2 = c(0.05,0.2),
-                       tr1 = c(1,10),     
-                       tr2 = c(5,20),
+  # par.df <- data.frame(ma1 = c(0.01,0.15),
+  #                      ma2 = c(0.05,0.25),
+  #                      tn1 = c(5,15),
+  #                      tn2 = c(5,20),
+  #                      mn1 = c(0.01,0.1),
+  #                      mn2 = c(0.01,0.1),
+  #                      mn3 = c(0.01,0.1),
+  #                      mn4 = c(0.01,0.1),
+  #                      tg1 = c(5,10),
+  #                      tg2 = c(1,10),
+  #                      tg3 = c(1,10),
+  #                      tg4 = c(1,10),
+  #                      mg1 = c(0.01,0.1),
+  #                      mg2 = c(0.05,0.2),
+  #                      tr1 = c(1,10),     
+  #                      tr2 = c(5,20),
+  #                      f1 = c(0.01,0.1),     
+  #                      f2 = c(0.05,0.2),
+  #                      A0 = c(0.05,0.4),
+  #                      N0 = c(0.005,0.04),
+  #                      # uMs = c(1,10),#sigma[1]/1e3,
+  #                      # uMr = c(1,10),#sigma[2]/1e3,
+  #                      # uCs = c(1,10),#sigma[3]/1e3,
+  #                      # uCr = c(1,10),#sigma[4]/1e3,
+  #                      # uNs = c(1,10),#sigma[5]/1e3,
+  #                      # uNr = c(1,10),#sigma[6]/1e3,
+  #                      k.slope = c(10,500),
+  #                      # ud15N = c(1,10),
+  #                      c2c = c(1,30),
+  #                      ms = c(0.1,5),
+  #                      mr = c(0.1,15),
+  #                      d15n = c(-10,10),#c(d15n.mean - d15n.sd,d15n.mean + d15n.sd),
+  #                      row.names = c('min','max'))
+  
+  tair.range <- unname(quantile(inputs.ls$X$TAIR,probs = c(0.05,0.5,0.95)))
+  tsoil.range <- unname(quantile(inputs.ls$X$TSOIL,probs = c(0.05,0.5,0.95)))
+  sm.range <- unname(quantile(inputs.ls$X$M,probs = c(0.05,0.5,0.95)))
+  n.range <- unname(quantile(inputs.ls$obs$dn15.pred,probs = c(0.05,0.5,0.95),na.rm=T))
+  
+  par.df <- data.frame(ma1 = c(min(0.01,sm.range[1]),sm.range[2]),
+                       ma2 = c(sm.range[3]-sm.range[2],sm.range[3]),
+                       
+                       # tn1 = c(5,10),
+                       # tn2 = c(5,20),
+                       tn1 = c(tsoil.range[1],tsoil.range[2]),
+                       tn2 = c(tsoil.range[3] - tsoil.range[2],tsoil.range[3]),
+                       
+                       mn1 = c(min(0.01,sm.range[1]),sm.range[2]),
+                       mn2 = c(sm.range[3]-sm.range[2],sm.range[3]),
+                       
+                       # mn3 = c(0.05,0.2),
+                       # mn4 = c(0.05,0.2),
+                       n15.rich = c(1,10),
+                       ndepleted = c(-10,-1),
+                       
+                       tg1 = c(tair.range[1],tair.range[2]),
+                       tg2 = c(1,20),
+                       tg3 = c(1,20),
+                       tg4 = c(1,tair.range[3]),
+                       
+                       mg1 = c(min(0.01,sm.range[1]),sm.range[2]),
+                       mg2 = c(sm.range[3]-sm.range[2],sm.range[3]),
+                       
+                       tr1 = c(tsoil.range[1],tsoil.range[2]), 
+                       tr2 = c(tsoil.range[3] - tsoil.range[2],tsoil.range[3]),
+                       
                        f1 = c(0.01,0.1),     
                        f2 = c(0.05,0.2),
                        A0 = c(0.05,0.4),
-                       N0 = c(0.005,0.04),
+                       N0 = c(0.005,0.05),
                        # uMs = c(1,10),#sigma[1]/1e3,
                        # uMr = c(1,10),#sigma[2]/1e3,
                        # uCs = c(1,10),#sigma[3]/1e3,
                        # uCr = c(1,10),#sigma[4]/1e3,
                        # uNs = c(1,10),#sigma[5]/1e3,
                        # uNr = c(1,10),#sigma[6]/1e3,
-                       k.slope = c(10,500),
+                       k.slope = c(0.1,10),#c(10,500),
                        # ud15N = c(1,10),
-                       c2c = c(1,30),
-                       ms = c(0.1,5),
-                       mr = c(0.1,15),
-                       d15n = c(-10,10),#c(d15n.mean - d15n.sd,d15n.mean + d15n.sd),
+                       c2c = c(1,100),
+                       ms = c(0.01,5),
+                       mr = c(0.01,25),
+                       d15n = c(n.range[1],n.range[3]),#c(d15n.mean - d15n.sd,d15n.mean + d15n.sd)
+                       
                        row.names = c('min','max'))
+  
   if(sum(met.df$sm,na.rm=T)!=0){
     return(list(inputs.ls = inputs.ls,par.df = par.df))
   }
@@ -123,7 +194,7 @@ fit.func <- function(ls.point.df){
   if(class(fit.value) == 'try-error' |
      class(input.val.ls) == 'try-error'){
     
-    class(mcmc.out) = 'try-error'
+     class(mcmc.out) = 'try-error'
   }
   # give results
   if(class(mcmc.out)[1] != 'try-error'){

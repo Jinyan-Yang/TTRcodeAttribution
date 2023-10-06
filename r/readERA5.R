@@ -8,8 +8,9 @@
 # tair.1984.1999 <- rast('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/tair/tair_1984-1999.nc')
 # tair.ra <- (c(tair.1984.1999,tair.2000.2010,tair.2010.2020))
 # # 
+library(raster)
 sm.2000.2010 <- raster::brick('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/sm/sm_2000_2010.nc')
-sm.2010.2020 <- raster::brick('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/sm/sm_2010_2020.nc')
+sm.2010.2020 <- raster::brick('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/sm/sm_2010_2020.nc',level = 2)
 sm.1984.1999 <- raster::brick('//fs1-cbr.nexus.csiro.au/{mmrg}/work/users/yan190/repo/ERA5_monthly/sm/sm_1984_1999.nc')
 sm.ra <- stack(list(sm.1984.1999,sm.2000.2010,sm.2010.2020))
 sm.ra <- readAll(sm.ra)
