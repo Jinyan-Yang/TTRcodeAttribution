@@ -195,89 +195,97 @@ ABC_acceptance <- function(parset,dat,threshold){
     out.ls$trueFalse <- F
     return(out.ls) 
   } 
-  initials <- data.frame(ms = parset[23],
-                         mr = parset[24],
-                         d15n = parset[25])
+  # initials <- data.frame(ms = parset[23],
+  #                        mr = parset[24],
+  #                        d15n = parset[25])
   # start model####
-  simulated_data <- ttr_d15n(steps = dat$steps,
-                             initials = initials,
-                             TAIR = dat$X[,"TAIR"],
-                             TSOIL = dat$X[,"TSOIL"],
-                             M = dat$X[,"M"],
-                             # N = dat$X[,"N"],
-                             # FIRE = dat$X[,"FIRE"],
-                             A = dat$X[,"PHOTO"],
-                             Kl = 0.5/30,
-                             gs = 1/0.025 / 60,# dat$gs/7,
-                             gr = 1/0.025 / 60,#dat$gr/7,#
-                             KM= dat$KM,
-                             KA= dat$KA,
-                             Jc= dat$Jc,
-                             Jn = dat$Jn,
-                             q = dat$q,
-                             RHOc= dat$RHOc,
-                             RHOn=dat$RHOn,
-                             Fc= dat$Fc,
-                             Fn= dat$Fn,
-                             ma1= parset[1],
-                             ma2= parset[1]+parset[2],
-                             
-                             tn1= parset[3],
-                             tn2= parset[3]+parset[4],
-                             
-                             mn1= parset[5],
-                             mn2= parset[5]+parset[6],
-                             
-                             mn3= parset[5]+parset[6]+parset[7],
-                             mn4= parset[5]+parset[6]+parset[7]+parset[8],
-                             
-                             tg1= parset[9],
-                             tg2= parset[9]+parset[10],
-                             tg3= parset[9]+parset[10]+parset[11],
-                             tg4= parset[9]+parset[10]+parset[11]+parset[12],
-                             
-                             mg1= parset[13],
-                             mg2= parset[13]+parset[14],
-                             
-                             tr1= parset[15],
-                             tr2= parset[15] + parset[16],
-                             
-                             f1= parset[17],
-                             f2= parset[17] + parset[18],
-                             
-                             A0= parset[19],
-                             N0= parset[20],
-                             uMs= 0,#parset[21],#sigma[1]/1e3,
-                             uMr= 0,#parset[22],#sigma[2]/1e3,
-                             uCs= 0,#parset[23],#sigma[3]/1e3,
-                             uCr= 0,#parset[24],#sigma[4]/1e3,
-                             uNs= 0,#parset[25],#sigma[5]/1e3,
-                             uNr= 0,#parset[26],#sigma[6]/1e3,
-                             # new param for d15N
-                             n15.rich = 6.93,
-                             ndepleted = -5.96,
-                             k.slope = parset[21],#5e4,
-                             ud15N = 0,#parset[28],#sigma[6]/1e3,
-                             fc.700 = 1.4
-  )
   
-  ######
-  simulated_data$ndvi.pred <- 1-exp(-simulated_data$plant.s.biomass * 
-                                      parset[22])
-  # print(simulated_data)
-  simulated_data <- cbind(simulated_data,dat$obs)
+  pred.df <- model.de.func(parset = parset,
+                           dat = dat,
+                           is.evalue = F)
+  
+  # simulated_data <- ttr_d15n(steps = dat$steps,
+  #                            initials = initials,
+  #                            TAIR = dat$X[,"TAIR"],
+  #                            TSOIL = dat$X[,"TSOIL"],
+  #                            M = dat$X[,"M"],
+  #                            # N = dat$X[,"N"],
+  #                            # FIRE = dat$X[,"FIRE"],
+  #                            A = dat$X[,"PHOTO"],
+  #                            Kl = 0.5/30,
+  #                            gs = 1/0.025 / 60,# dat$gs/7,
+  #                            gr = 1/0.025 / 60,#dat$gr/7,#
+  #                            KM= dat$KM,
+  #                            KA= dat$KA,
+  #                            Jc= dat$Jc,
+  #                            Jn = dat$Jn,
+  #                            q = dat$q,
+  #                            RHOc= dat$RHOc,
+  #                            RHOn=dat$RHOn,
+  #                            Fc= dat$Fc,
+  #                            Fn= dat$Fn,
+  #                            ma1= parset[1],
+  #                            ma2= parset[1]+parset[2],
+  #                            
+  #                            tn1= parset[3],
+  #                            tn2= parset[3]+parset[4],
+  #                            
+  #                            mn1= parset[5],
+  #                            mn2= parset[5]+parset[6],
+  #                            
+  #                            mn3= parset[5]+parset[6]+parset[7],
+  #                            mn4= parset[5]+parset[6]+parset[7]+parset[8],
+  #                            
+  #                            tg1= parset[9],
+  #                            tg2= parset[9]+parset[10],
+  #                            tg3= parset[9]+parset[10]+parset[11],
+  #                            tg4= parset[9]+parset[10]+parset[11]+parset[12],
+  #                            
+  #                            mg1= parset[13],
+  #                            mg2= parset[13]+parset[14],
+  #                            
+  #                            tr1= parset[15],
+  #                            tr2= parset[15] + parset[16],
+  #                            
+  #                            f1= parset[17],
+  #                            f2= parset[17] + parset[18],
+  #                            
+  #                            A0= parset[19],
+  #                            N0= parset[20],
+  #                            uMs= 0,#parset[21],#sigma[1]/1e3,
+  #                            uMr= 0,#parset[22],#sigma[2]/1e3,
+  #                            uCs= 0,#parset[23],#sigma[3]/1e3,
+  #                            uCr= 0,#parset[24],#sigma[4]/1e3,
+  #                            uNs= 0,#parset[25],#sigma[5]/1e3,
+  #                            uNr= 0,#parset[26],#sigma[6]/1e3,
+  #                            # new param for d15N
+  #                            n15.rich = 6.93,
+  #                            ndepleted = -5.96,
+  #                            k.slope = parset[21],#5e4,
+  #                            ud15N = 0,#parset[28],#sigma[6]/1e3,
+  #                            fc.700 = 1.4
+  # )
+  
+  # ######
+  # simulated_data$ndvi.pred <- 1-exp(-simulated_data$plant.s.biomass * 
+  #                                     parset[22])
+  # # print(simulated_data)
+  # simulated_data <- cbind(simulated_data,dat$obs)
+  
   # comparison with the observed summary statistics
-  diff.n15 <- get.nmse.func(obs = simulated_data$dn15.pred,
-                            prd = simulated_data$d15n)
-  diff.ndvi <- get.nmse.func(obs = simulated_data$ndvi,
-                             prd = simulated_data$ndvi.pred)
+  diff.n15 <- simulated_data$nrmse.d15n
+    # get.nmse.func(obs = simulated_data$dn15.pred,
+    #                         prd = simulated_data$d15n)
+  diff.ndvi <- simulated_data$nrmse.ndvi
+    # get.nmse.func(obs = simulated_data$ndvi,
+    #                          prd = simulated_data$ndvi.pred)
   if((diff.n15 < threshold) & (diff.ndvi < threshold)){
     out.ls$diff.n15 <- diff.n15
     out.ls$diff.ndvi <- diff.ndvi
     out.ls$trueFalse <- T
     out.ls$outputs <- simulated_data
     return(out.ls)
-  }  else{
+  } else{
     out.ls$diff.n15 <- diff.n15
     out.ls$diff.ndvi <- diff.ndvi
     out.ls$trueFalse <- F
